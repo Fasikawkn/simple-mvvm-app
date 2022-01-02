@@ -4,10 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_mvvm_app/src/model/apis/api_response.dart';
 import 'package:simple_mvvm_app/src/model/model_objects/medicine.dart';
+import 'package:simple_mvvm_app/src/view_model/auth_view_model.dart';
+import 'package:simple_mvvm_app/src/view_model/db_provider.dart';
 import 'package:simple_mvvm_app/src/view_model/medicine_view_model.dart';
 
 class HomePage extends StatefulWidget {
-  static const routeName = '/mvvc/homepage';
+  static const routeName = '/mvvmapp/homepage';
   const HomePage({Key? key}) : super(key: key);
 
   @override
@@ -57,19 +59,31 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildGreetingUser() {
+  Widget _buildGreetingUser(UserProvider userProvider) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5.0),
-      child: Center(
-        child: Text(
-          _getGreetMessage("Username"),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            // color: Colors.grey,
-            fontWeight: FontWeight.bold,
-            fontSize: 25.0,
-          ),
-        ),
+      child: FutureBuilder<String>(
+        future: userProvider.fetchAndSetData(),
+        builder: (context, snapshots) {
+          if (snapshots.hasData) {
+            String userName = snapshots.data!;
+            return Center(
+              child: Text(
+                _getGreetMessage(userName),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  // color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25.0,
+                ),
+              ),
+            );
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
       ),
     );
   }
@@ -86,7 +100,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMedicineList( List<Medicine> medicine) {
+  Widget _buildMedicineList(List<Medicine> medicine) {
     return Container(
       padding: const EdgeInsets.symmetric(
           // horizontal: 20.0,
@@ -112,19 +126,26 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  late AuthenticationViewModel userModel;
+  late UserProvider userProvider;
+
   @override
   Widget build(BuildContext context) {
-    // final userModel = Provider.of<MvvpUserProvider>(context);
+    userModel = Provider.of<AuthenticationViewModel>(context);
+    userProvider = Provider.of<UserProvider>(context);
     // userModel.fetchAndSetData();
     // debugPrint("User ${userModel.items}");
     return Scaffold(
       appBar: AppBar(
-        title: const Text("MVVP App"),
+        title: const Text("MVVM App"),
         automaticallyImplyLeading: false,
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () async {},
+            onPressed: () async {
+              await userProvider.deleteUser();
+              await userModel.signout();
+            },
             icon: const Icon(
               Icons.power_settings_new,
               color: Colors.white,
@@ -138,11 +159,12 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _buildDateLabel(),
-            _buildGreetingUser(),
+            _buildGreetingUser(userProvider),
             _buildMedicinesLabel(),
             Consumer<MedicineViewModel>(
               builder: (context, value, child) {
-                if (value.response.status == Status.laoding || value.response.status == Status.initial) {
+                if (value.response.status == Status.laoding ||
+                    value.response.status == Status.initial) {
                   return const Center(
                     child: CircularProgressIndicator(),
                   );
@@ -155,7 +177,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   );
-                }else{
+                } else {
                   List<Medicine> _medicines = value.response.data;
                   return _buildMedicineList(_medicines);
                 }

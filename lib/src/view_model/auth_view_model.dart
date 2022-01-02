@@ -19,6 +19,11 @@ class AuthenticationViewModel extends ChangeNotifier {
   String verificationID = '';
   Future verifyPhone(
       Map<String, dynamic> userInfo, BuildContext context) async {
+        Route<void> _myRouteBuilder(BuildContext context, Object? arguments) {
+            return MaterialPageRoute<void>(
+              builder: (context) => PhoneVerification(userInfo,),
+            );
+          }
     try {
       response = Response.loading("Verifying");
       await _firebaseAuth.verifyPhoneNumber(
@@ -29,10 +34,11 @@ class AuthenticationViewModel extends ChangeNotifier {
           verificationID = verificationId;
 
           response = Response.completed(verificationId);
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PhoneVerification(userInfo),
-            ),
+          
+
+          Navigator.of(context).restorablePushReplacementNamed(
+            PhoneVerification.routeName,
+            arguments: userInfo
           );
           notifyListeners();
         },
@@ -59,14 +65,19 @@ class AuthenticationViewModel extends ChangeNotifier {
         }
       }
     }
+    response = Response.completed('Verification Completed');
   }
 
   Future siginInWithCredential(PhoneAuthCredential phoneAuthCredential) async {
+    response = Response.loading('signing');
     try {
       await _firebaseAuth.signInWithCredential(phoneAuthCredential);
+      response = Response.completed('signin completed');
     } catch (e) {
       if (e.toString().toLowerCase().contains("auth credential is invalid")) {
-      } else {}
+      } else {
+        response = Response.error(e.toString());
+      }
     }
   }
 
@@ -75,11 +86,11 @@ class AuthenticationViewModel extends ChangeNotifier {
       debugPrint("The phone Number is invalid");
     }
     String message = getMessageFromErrorCode(exception.code);
-
-    notifyListeners();
+    response = Response.error(message);
   }
 
   _onCodeAutoRetrievalTimeout(String timeout) {
+    response = Response.error("Time out");
     return null;
   }
 
