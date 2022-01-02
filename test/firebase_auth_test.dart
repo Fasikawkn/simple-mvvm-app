@@ -13,9 +13,9 @@ void main() {
   setUp(() {});
   tearDown(() {});
 
-  test('testing verify phone', () async{
-    Map<String, dynamic> _userInfo = {'phone': "+251929465849", 'username':'abex'};
+  // test('testing verify phone', () async{
+  //   Map<String, dynamic> _userInfo = {'phone': "+251929465849", 'username':'abex'};
 
-    when(viewModel.verifyPhone(_userInfo,BuildContext context ))
-  });
+  //   when(viewModel.verifyPhone(_userInfo,BuildContext context ))
+  // });
 }
